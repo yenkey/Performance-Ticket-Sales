@@ -1,0 +1,50 @@
+<apex:page controller="performanceLookupController" showHeader="false" sidebar="false" action="{!lookupforshow}">
+    <apex:pageMessages id="msg"/>
+  <apex:form >
+    <apex:pageBlock >
+        <apex:outputLabel for="searchPerformance"/>
+        Search Performance:<apex:inputText id="searchPerformance" value="{!searchPerformance}" label="Search"/>
+        <apex:commandButton value="Search" action="{!lookupforShow}" reRender="prefresh,msg"/>
+    </apex:pageBlock>
+  </apex:form>
+    <apex:pageBlock title="Future Performances">
+    <apex:outputText value="{!statusString}"/>
+      <apex:pageBlockSection columns="1" id="prefresh">
+         <apex:pageBlockTable value="{!performanceList}" var="perfomrance" >
+             <apex:column headervalue="Name" >
+             <apex:outputLink value="#" onclick="fillIn('{!perfomrance.name}', '{!perfomrance.id}')">{!perfomrance.Name}</apex:outputLink> 
+             </apex:column>
+             <apex:column headervalue="start date and time" value="{!perfomrance.Start_DateTime__c}"/>
+             <apex:column headervalue="Venue" value="{!perfomrance.Venue__c}"/>
+         </apex:pageBlockTable>
+      
+      </apex:pageBlockSection>
+    
+    
+  </apex:pageBlock>
+    <script>
+   function fillIn(name, id)
+   {
+      var winMain=window.opener;
+      if (null==winMain)
+      {
+         winMain=window.parent.opener;
+      }
+      var ele=winMain.document.getElementById('{!$CurrentPage.parameters.namefield}');
+      ele.value=name;
+      ele=winMain.document.getElementById('{!$CurrentPage.parameters.idfield}');
+      ele.value=id;
+      CloseWindow();
+   }
+ 
+   function CloseWindow()
+   {
+      var winMain=window.opener;
+      if (null==winMain)
+      {
+         winMain=window.parent.opener;
+      }
+      winMain.closeLookupPopup();
+   }
+    </script>
+</apex:page>

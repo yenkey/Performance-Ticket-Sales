@@ -1,0 +1,160 @@
+<apex:page standardController="Consumer__c" extensions="ticketSearchController" action="{!InitiatorAction}" sidebar="false">
+  <apex:pageMessages id="msg"/>
+   <apex:form >
+     <apex:pageBlock >
+      <apex:pageBlockSection Title="Consumer Information" columns="1" id="caggregate">
+        <apex:outputField value="{!consumer.First_Name__c}"/>
+        <apex:outputField value="{!consumer.Last_Name__c}"/>
+        <apex:outputField value="{!consumer.Name}"/>
+        <apex:outputField value="{!consumer.Total_Of_Future_Held__c}"/>
+        <apex:outputField value="{!consumer.Total_Of_Future_Purchases__c}"/>
+        <apex:outputField value="{!consumer.Lifetime_Spend__c}"/>
+      </apex:pageBlockSection>
+    
+      <apex:pageBlockSection Title="Performance Filter" id="find">
+         <apex:outputPanel >
+           <apex:outputLabel value="Performance" for="performanceId"/>&nbsp;&nbsp;
+           <apex:inputHidden value="{!performanceId}" id="pId" />
+           <apex:inputText value="{!performanceName}" Id="pName" onChange=" performancereset('{!$Component.pId}');"/>
+           <apex:commandLink hreflang="#" onclick="openLookupPopup('{!$Component.pName}', '{!$Component.pId}'); return false"  >
+             <apex:image value="{!$Resource.lookupicon}" width="15px" height="15px" alt="lookup"/>
+          </apex:commandLink> <br/>                  
+          <apex:outputText style="color:red;" rendered="{!error}" value="{!Errorstring}"></apex:outputText>
+                <apex:message for="pName" styleClass="locationError" /> <p /> 
+          </apex:outputPanel>
+          <apex:outputPanel >
+            <apex:outputLabel for="pdatetime" value="Start Date/Time: " />
+            <apex:outputText id="pdatetime" value="{!StartDateTime}"/>
+          </apex:outputPanel>
+          <apex:commandButton value="FindTickets" action="{!searchTickets}" reRender="TicketsRefresh,AccessChek,msg,find" status="status" />
+      </apex:pageBlockSection>
+   
+      <apex:pageBlockSection title="Available Tickets" columns="1">
+        <apex:outputPanel layout="inline">
+          <apex:commandButton value="Reserve" action="{!reserveTickets}" />
+          <apex:commandButton value="Release" action="{!releaseTickets}"/>
+          <apex:commandButton value="Purchase" action="{!purchaseTickets}" />
+          <apex:commandButton value="Return" action="{!returnTickets}"/>
+          <apex:commandButton value="Back To Customer" action="{!redirectToCustomer}"/>
+        </apex:outputPanel>
+    <!-- <apex:actionStatus id="status" >
+      <apex:facet name="start"> <apex:image value="{!$Resource.searchAnimation}" height="20px" width="20px"/>
+      </apex:facet>
+      <apex:facet name="stop">
+      <apex:image value="{!$Resource.successful}" height="20px" width="20px"/>
+      </apex:facet>
+     </apex:actionStatus>  --> 
+ 
+        <div style="position: relative;">
+          <apex:outputpanel >
+           <apex:actionstatus id="status">
+            <apex:facet name="start">
+                <div class="waitingSearchDiv" id="el_loading" style="background-color: #fbfbfb;
+                       height: 100%;opacity:0.65;width:100%;"> 
+                    <div class="waitingHolder" style="top: 74.2px; width: 91px;">
+                        <img class="waitingImage" src="/img/loading.gif" title="Please Wait..." />
+                        <span class="waitingDescription">Loading...</span>
+                    </div>
+                </div>
+            </apex:facet>
+           </apex:actionstatus>
+          </apex:outputpanel>
+          
+          
+        <apex:outputPanel id="TicketsRefresh" layout="inline">
+       
+         <apex:actionFunction action="{!selectAll}" name="checkAllBoxes" rerender="TicketsRefresh,msg" status="status"></apex:actionFunction>
+         <apex:actionFunction action="{!gatherSelected}" name="checksingle" rerender="TicketsRefresh,msg" status="status"></apex:actionFunction>
+         
+         <apex:pageBlockTable value="{!ticketWrapperList}" var="wrap" rendered="true">
+          <apex:facet name="header">  
+              <apex:outputPanel >
+              <apex:outputText value="{!statusString}"/>                  
+              </apex:outputPanel>   
+          </apex:facet>
+          <apex:column headerValue="Select" >
+            <apex:facet name="header"> 
+              <apex:inputCheckbox value="{!selectAll}" onclick="checkAllBoxes()"/>
+            </apex:facet>
+            <apex:inputCheckbox value="{!wrap.selected}" onclick="/*checksingle()*/"/>
+          </apex:column>
+          <apex:column headerValue="Performance" value="{!wrap.ticket.Performance__c}">
+          <apex:facet name="header"> </apex:facet>
+          </apex:column>
+          <apex:column headerValue="Cost" value="{!wrap.ticket.Cost__c}">
+           <apex:facet name="header"> </apex:facet>
+          </apex:column>
+          <apex:column headerValue="Venue" value="{!wrap.ticket.seat__r.Venue__c}">
+           <apex:facet name="header"> </apex:facet>
+          </apex:column>
+          <apex:column headerValue="Seat Section" value="{!wrap.ticket.seat__r.Section__c}"> 
+           <apex:facet name="header"> </apex:facet>
+          </apex:column>
+          <apex:column headerValue="Seat Row" value="{!wrap.ticket.seat__r.Row__c}">
+           <apex:facet name="header"></apex:facet>
+         </apex:column>
+         <apex:column headerValue="Seat Number" value="{!wrap.ticket.seat__r.Seat_Number__c}"> 
+           <apex:facet name="header"> </apex:facet>
+         </apex:column>
+         <apex:column headerValue="Status" value="{!wrap.ticket.Status__c}"> 
+           <apex:facet name="header"> </apex:facet>
+         </apex:column>
+         <apex:facet name="footer" >
+               
+           <apex:outputPanel id="navigation" >
+           <apex:commandLink value="First << " action="{!first}" rendered="{!(hasPrevious)}" status="status" reRender="TicketsRefresh,navigation,msg"/>&nbsp;
+           <apex:outputText value="First <<" rendered="{!NOT(hasPrevious)}"/>
+           <apex:commandLink value="Previous < " action="{!previous}" reRender="TicketsRefresh,navigation,msg" status="status" rendered="{!(hasPrevious)}"/>&nbsp;
+           <apex:outputText value="Previous <" rendered="{!NOT(hasPrevious)}" />
+           <apex:outputPanel >
+             <apex:outputText >
+              <strong>{!LPAD('Displaying Page:',17,' ')}{!pageNumber} of {!totalPages} {!RPAD('Page(s)',8,' ')} </strong>
+             </apex:outputText>
+          </apex:outputPanel>
+          <apex:commandLink value="Next >" action="{!next}" reRender="TicketsRefresh,navigation,msg"  status="status" rendered="{!(hasNext)}" />&nbsp;
+          <apex:outputText value="Next >" rendered="{!NOT(hasNext)}"/>
+          <apex:commandLink value="Last >>" action="{!last}" rendered="{!(hasNext)}" reRender="TicketsRefresh,navigation,msg" status="status"/>&nbsp;
+          <apex:outputText value="Last >>" rendered="{!NOT(hasNext)}"/>
+         </apex:outputPanel>
+         </apex:facet>
+       </apex:pageBlockTable>
+     </apex:outputPanel></div>
+        
+    </apex:pageBlockSection>
+  </apex:pageBlock>
+     
+     
+ </apex:form>
+ <script >
+         
+     var newWin=null;
+     function openLookupPopup(name, id)
+      {
+        var vfinput = document.getElementById(name).value;
+        var pageName="{!$page.performanceLookup}";
+        var url=pageName+"?namefield="+name+"&idfield="+id+"&vfinput="+vfinput;
+        newWin=window.open(url, 'Popup','height=500,width=600,left=100,top=100,resizable=no,scrollbars=yes,toolbar=no,status=no');
+        if (window.focus) 
+        {
+         newWin.focus();
+        }
+      return false;
+     }
+      
+    function closeLookupPopup()
+     {
+      if (null!=newWin)
+      {
+       newWin.close();
+      }  
+     }
+   function performancereset(pElementId)
+   {
+    var pelement=document.getElementById(pElementId);
+      pelement.value=null;
+      
+   }
+    </script>
+    <style>
+    </style>
+</apex:page>
